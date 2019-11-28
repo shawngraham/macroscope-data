@@ -16,12 +16,13 @@ file_names <- dir(here("nls-text-chapbooks/"), full.names = TRUE)
 # i removed these in terminal with
 # perl -p -i -e 's/\R//g;' *.txt
 
-full_text_tbl <- data.frame(file_name = file_names,
+full_text_tbl <- tibble(file_name = file_names,
                         full_text = map_chr(file_names,
                                             read_lines))
 
 metadata <- read.csv("nls-metadata/chapbooks-inventory.csv")
 
+# put it together for writing to csv
 df <- data.frame(line = 1:3080, title = metadata$title, text = full_text_tbl$full_text, date = metadata$year, certainty = metadata$certainty)
 
 write.csv(df, "nls-metadata/chapbooks-text.csv")
