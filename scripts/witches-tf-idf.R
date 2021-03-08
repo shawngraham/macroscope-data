@@ -1,16 +1,17 @@
 # tf-idf with salem witch trials
 
 # start with the reports.df created after scraping
-# following this https://mohitatgithub.github.io/2018-04-28-Learning-tf-idf-with-tidytext/
 
 library(readr)
 library(tidytext)
 library(tidyverse)
+library(forcats) # this is for the visualization
 
-# tidy the reports.df
-witches  <- read_csv("witches-all-reports.csv")
+# tidy the witch reports
+# either load witches-all-reports.csv from your machine or from online
+witches  <- read_csv("https://raw.githubusercontent.com/shawngraham/macroscope-data/master/data/witches-all-reports.csv")
 
-# we bring the data in from our earlier scrape, where it was known as `reports.df`
+# we bring the data in from our earlier scrape
 # put the data into a tibble (data structure for tidytext)
 # we are also telling R what kind of data is in the 'text',
 # 'line', and 'data' columns in our original csv.
@@ -69,18 +70,52 @@ witch_words <- tidy_witches %>%
 head(witch_words)
 
 
+######
+# following https://www.tidytextmining.com/tfidf.html
 
-# let's do some tf_idf and plot things out!
+# for visualization, it helps to also know
+# the total counts of the various words
+# by year
 
-witch_words %>%
-  count(year, word, sort = TRUE) %>%
-  bind_tf_idf(word, year, n) %>%
-  arrange(-tf_idf) %>%
+total_words <- witch_words %>% 
+  group_by(year) %>% 
+  summarize(total = sum(n))
+
+witch_words <- left_join(witch_words, total_words)
+
+witch_words
+
+# and we can then also take a look at their frequency too
+freq_by_rank <- witch_words %>% 
+  group_by(year) %>% 
+  mutate(rank = row_number(), 
+         `term frequency` = n/total) %>%
+  ungroup()
+
+freq_by_rank
+
+# so now let's calculate the tf-idf
+witches_tf_idf <- witch_words %>%
+  bind_tf_idf(word, year, n)
+
+witches_tf_idf
+
+# we can a look at the result, organized in descending order
+witches_tf_idf %>%
+  select(-total) %>%
+  arrange(desc(tf_idf))
+
+# so let's visualize the result by years
+# you can choose how many top words to show
+# by adjusting 'n', but if words have the same
+# score, you'll sometimes end up with more 
+witches_tf_idf %>%
   group_by(year) %>%
-  top_n(5) %>%
-  ungroup %>%
-  mutate(word = reorder(word, tf_idf)) %>%
-  ggplot(aes(word, tf_idf, fill = year)) +
-  geom_col(alpha = 0.8, show.legend = FALSE) +
-  facet_wrap(~ year, scales = "free") +
-  coord_flip()
+  slice_max(tf_idf, n = 5) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(word, tf_idf), fill = year)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~year, ncol = 2, scales = "free") +
+  labs(x = "tf-idf", y = NULL)
+
+
