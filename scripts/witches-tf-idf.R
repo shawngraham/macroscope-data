@@ -21,35 +21,58 @@ witches <- tibble (case = witches$id, text = (str_remove_all(witches$X.text., "[
 witches$id <- row.names(witches)
 
 
-# we're also going to try to put an indication of which case we're dealing with
+# turn into tidy format
 
-#witch_reports <- witches %>%
-#  mutate(case = case) %>%
-#  unnest_tokens(word, text)
+tidy_witches <- witches %>%
+  unnest_tokens(word, text)
 
-head(witch_reports)
 
-# most frequent word?
-
-witch_reports %>% count(word, sort = TRUE)
-
-# remove stop words
+# load up the default list of stop_words that comes
+# with the tidyverse
 
 data(stop_words)
 
 # remove (anti-join) the stopwords
-witch_reports <- witch_reports %>%
+tidy_witches <- tidy_witches %>%
   anti_join(stop_words)
 
-# this line might take a few moments to run btw
-witch_words <- witch_reports %>%
+# you could try everything that follows by swapping 'case' for year in all subsequent lines
+witch_words <- tidy_witches %>%
+  count(year, word, sort = TRUE)
+
+# take a look at what you've just done
+# by examining the first few lines of `witches_words`
+
+head(witch_words)
+
+# already, you start to get a sense of what's in this dataset...
+
+# but a word like 'aforesaid' or 'court' isn't going to be much use, so let's filter those out and look again.
+
+# custom stopwords if necessary, add as desired
+
+custom_stop_words <- bind_rows(tibble(word = c("aforesaid", "court", "archives","lord","salem","king","queen",
+                                               "sarah","mary","john","wife","elizabeth","county","massachusetts",
+                                               "john","county","essex","boston","witchcraft","lady","she","shee",
+                                               "itt","joseph","george","jacobs","putnam","william","james","martin",
+                                               "thomas","abigail"),  
+                                      lexicon = c("custom")), 
+                               stop_words)
+
+# delete custom stopwords from our data
+tidy_witches <- tidy_witches %>%
+  anti_join(custom_stop_words)
+
+witch_words <- tidy_witches %>%
   count(year, word, sort = TRUE)
 
 head(witch_words)
 
+
+
 # let's do some tf_idf and plot things out!
 
-p1 <- witch_words %>%
+witch_words %>%
   count(year, word, sort = TRUE) %>%
   bind_tf_idf(word, year, n) %>%
   arrange(-tf_idf) %>%
@@ -61,4 +84,3 @@ p1 <- witch_words %>%
   geom_col(alpha = 0.8, show.legend = FALSE) +
   facet_wrap(~ year, scales = "free") +
   coord_flip()
-
