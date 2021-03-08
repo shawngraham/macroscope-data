@@ -1,3 +1,7 @@
+# a slightly pruned version of this file is used for a walkthrough - with images - at 
+# https://craftingdh.netlify.app/week/4/topic-models/
+
+
 # Topic Modeling Scottish Chapbooks
 # slightly modified version of
 # https://tm4ss.github.io/docs/Tutorial_6_Topic_Models.html
